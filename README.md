@@ -7,3 +7,20 @@ The ModelNet40 dataset consists of 12,311 CAD models from 40 object categories, 
 
 The experiments are conducted on the processed data in `.hdf5` format. Each processed object contains 2048 points sampled from the original CAD models.
 
+## Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+## Experiments
+The experiments are conducted on the following models:
+- [DGCNN](https://github.com/kentechx/x-dgcnn)
+
+Training models by running the corresponding scripts in the `code` folder. For example, to train the DGCNN model, run the following command:
+```bash
+python code/dgcnn.py
+```
+
+## Results
+The following table shows the classification accuracy of the models on the ModelNet40 dataset.
+
