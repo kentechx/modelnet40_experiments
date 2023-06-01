@@ -16,5 +16,5 @@ parameters:
     values: [0, 2]
   epochs:
     value: 100
-  warmup:
+  warm_up:
     value: 10
