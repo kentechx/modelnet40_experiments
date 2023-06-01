@@ -37,6 +37,7 @@ class LitModel(pl.LightningModule):
         pred = self(x, x[:, :3, :].clone())
         loss = F.cross_entropy(pred, y)
         self.train_acc(pred, y)
+        self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"], prog_bar=True)
         self.log('train_loss', loss, prog_bar=True)
         self.log('train_acc', self.train_acc, prog_bar=True)
         return loss
