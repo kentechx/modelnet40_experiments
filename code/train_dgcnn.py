@@ -1,11 +1,11 @@
 import os
-import json
 import fire
+from pprint import pprint
 import torch
 import torch.nn.functional as F
-import pytorch_lightning as pl
-import torchmetrics
 from torch.utils.data import DataLoader
+import torchmetrics
+import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from einops import rearrange
@@ -15,7 +15,7 @@ from dataset.modelnet import ModelNet40
 
 
 class LitModel(pl.LightningModule):
-    def __init__(self, k, dropout, lr, batch_size, epochs, warm_up):
+    def __init__(self, k, dropout, lr, batch_size, epochs, warm_up, optimizer):
         super().__init__()
         self.save_hyperparameters()
         self.warm_up = warm_up
@@ -52,7 +52,12 @@ class LitModel(pl.LightningModule):
         self.log('val_acc', self.val_acc, prog_bar=True)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.net.parameters())
+        if self.hparams.optimizer == 'sgd':
+            optimizer = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9, weight_decay=1e-4)
+        elif self.hparams.optimizer == 'adamw':
+            optimizer = torch.optim.AdamW(self.net.parameters(), lr=self.lr)
+        else:
+            raise NotImplementedError
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer, total_steps=self.trainer.estimated_stepping_batches, max_lr=self.lr,
             pct_start=self.warm_up / self.trainer.max_epochs, div_factor=10, final_div_factor=100)
@@ -73,16 +78,18 @@ def run(k=40,
         lr=1e-3,
         epochs=250,
         warm_up=10,
-        gradient_clip_val=1.,
+        optimizer='sgd',
+        gradient_clip_val=0,
         version='dgcnn',
         offline=False):
     # print all hyperparameters
-    print(json.dumps(locals(), indent=4))
+    pprint(locals())
     pl.seed_everything(42)
 
-    os.makedirs('work_dir', exist_ok=True)
-    logger = WandbLogger(project='modelnet40_experiments', name=version, save_dir='work_dir', offline=offline)
-    model = LitModel(k=k, dropout=dropout, batch_size=batch_size, epochs=epochs, lr=lr, warm_up=warm_up)
+    os.makedirs('wandb', exist_ok=True)
+    logger = WandbLogger(project='modelnet40_experiments', name=version, save_dir='wandb', offline=offline)
+    model = LitModel(k=k, dropout=dropout, batch_size=batch_size, epochs=epochs, lr=lr, warm_up=warm_up,
+                     optimizer=optimizer)
     callback = ModelCheckpoint(save_last=True)
 
     trainer = pl.Trainer(logger=logger, accelerator='cuda', max_epochs=epochs, callbacks=[callback],
