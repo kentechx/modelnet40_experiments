@@ -2,18 +2,21 @@ program: train_dgcnn.py
 method: bayes
 project: modelnet40_experiments
 metric:
-  name: val_loss
-  goal: minimize
+  name: val_acc
+  goal: maximize
 parameters:
   lr:
-    min: 0.0001
+    distribution: uniform
+    min: 0.0004
     max: 0.001
   optimizer:
-    values: [adamw, sgd]
+    values: ["adamw", "sgd"]
   dropout:
     values: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
   gradient_clip_val:
-    values: [0, 2]
+    distribution: int_uniform
+    max: 4
+    min: 0
   epochs:
     value: 100
   warm_up:
