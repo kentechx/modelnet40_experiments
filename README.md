@@ -34,10 +34,17 @@ python code/train_dgcnn.py
 
 ## Results
 
-The following table shows the classification accuracy of the models on the ModelNet40 dataset.
+The following table shows the classification accuracy of the models on the ModelNet40 dataset (trained on a single
+Nvidia RTX 3090 GPU).
 
 | Model    | Overall Accuracy |
 |----------|------------------|
 | DGCNN    | 91.8%            |
 | PointNet | 89.4%            |
 
+You can reproduce the results by running the corresponding scripts in the `code` folder with default configurations.
+For example, to train the PointNet model, run the following command
+
+```bash
+python code/train_pointnet.py
+```
