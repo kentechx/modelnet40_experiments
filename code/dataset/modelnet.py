@@ -75,10 +75,10 @@ def anisotropic_scale(x: np.ndarray, min_scale=0.66, max_scale=1.5, p=0.5):
 class ModelNet40(Dataset):
     def __init__(self,
                  train=True,
-                 rotate_func=partial(rotate, axis='y', angle=15, p=0.5),
-                 jitter_func=partial(jitter, sigma=0.01, clip=0.05, p=0.5),
-                 translate_func=partial(translate, shift=0.2, p=0.5),
-                 anisotropic_scale_func=partial(anisotropic_scale, min_scale=0.66, max_scale=1.5, p=0.5),
+                 rotate_func=partial(rotate, axis='y', angle=15, p=1.),
+                 anisotropic_scale_func=partial(anisotropic_scale, min_scale=0.66, max_scale=1.5, p=1.),
+                 jitter_func=partial(jitter, sigma=0.01, clip=0.05, p=1.),
+                 translate_func=partial(translate, shift=0.2, p=1.),
                  ):
         self.train = train
         self.data, self.label = load_data_cls('train' if train else 'test')
