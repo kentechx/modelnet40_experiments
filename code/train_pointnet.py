@@ -15,7 +15,7 @@ from dataset.modelnet import ModelNet40
 
 
 class LitModel(pl.LightningModule):
-    def __init__(self, dropout, lr, batch_size, epochs, warm_up, optimizer):
+    def __init__(self, n_points, dropout, lr, batch_size, epochs, warm_up, optimizer):
         super().__init__()
         self.save_hyperparameters()
         self.warm_up = warm_up
@@ -53,9 +53,11 @@ class LitModel(pl.LightningModule):
 
     def configure_optimizers(self):
         if self.hparams.optimizer == 'sgd':
-            optimizer = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9, weight_decay=1e-4)
+            optimizer = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
+        elif self.hparams.optimizer == 'adam':
+            optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr, weight_decay=1e-4)
         elif self.hparams.optimizer == 'adamw':
-            optimizer = torch.optim.AdamW(self.net.parameters(), lr=self.lr)
+            optimizer = torch.optim.AdamW(self.net.parameters(), lr=self.lr, weight_decay=1e-2)
         else:
             raise NotImplementedError
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
@@ -64,15 +66,18 @@ class LitModel(pl.LightningModule):
         return [optimizer], [{'scheduler': scheduler, 'interval': 'step'}]
 
     def train_dataloader(self):
-        return DataLoader(ModelNet40(train=True), batch_size=self.hparams.batch_size, num_workers=4, shuffle=True,
-                          pin_memory=True)
+        H = self.hparams
+        return DataLoader(ModelNet40(n_points=H.n_points, train=True), batch_size=H.batch_size, num_workers=4,
+                          shuffle=True, pin_memory=True)
 
     def val_dataloader(self):
-        return DataLoader(ModelNet40(train=False), batch_size=self.hparams.batch_size, num_workers=4, shuffle=False,
-                          pin_memory=True)
+        H = self.hparams
+        return DataLoader(ModelNet40(n_points=H.n_points, train=False), batch_size=H.batch_size, num_workers=4,
+                          shuffle=False, pin_memory=True)
 
 
-def run(lr=1e-3,
+def run(n_points=1024,
+        lr=1e-3,
         epochs=250,
         batch_size=32,
         warm_up=10,
@@ -87,7 +92,7 @@ def run(lr=1e-3,
 
     os.makedirs('wandb', exist_ok=True)
     logger = WandbLogger(project='modelnet40_experiments', name=version, save_dir='wandb', offline=offline)
-    model = LitModel(dropout=dropout, batch_size=batch_size, epochs=epochs, lr=lr, warm_up=warm_up,
+    model = LitModel(n_points=n_points, dropout=dropout, batch_size=batch_size, epochs=epochs, lr=lr, warm_up=warm_up,
                      optimizer=optimizer)
     callback = ModelCheckpoint(save_last=True)
 
