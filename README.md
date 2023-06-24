@@ -24,6 +24,7 @@ The experiments are conducted on the following models:
 
 - [DGCNN](https://github.com/kentechx/x-dgcnn)
 - [PointNet](https://github.com/kentechx/pointnet)
+- [PointNet2](https://github.com/kentechx/pointnet)
 
 Training models by running the corresponding scripts in the `code` folder. For example, to train the DGCNN model, run
 the following command:
@@ -34,13 +35,13 @@ python code/train_dgcnn.py
 
 ## Results
 
-The following table shows the classification accuracy of the models on the ModelNet40 dataset (trained on a single
-Nvidia RTX 3090 GPU).
+The table below presents the classification accuracy of the models on the ModelNet40 dataset (1024 points, trained on a single
+Nvidia RTX 3090 GPU). Some of the following results are the best outcomes obtained after hyperparameter sweepings.
 
 | Model    | Overall Accuracy |
 |----------|------------------|
-| DGCNN    | 91.8%            |
-| PointNet | 89.4%            |
+| DGCNN    | 92.4%            |
+| PointNet | 90.7%            |
 
 You can reproduce the results by running the corresponding scripts in the `code` folder with default configurations.
 For example, to train the PointNet model, run the following command

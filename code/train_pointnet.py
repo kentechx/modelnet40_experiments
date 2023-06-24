@@ -78,7 +78,7 @@ class LitModel(pl.LightningModule):
 
 def run(n_points=1024,
         lr=1e-3,
-        epochs=200,
+        epochs=100,
         batch_size=32,
         warm_up=10,
         optimizer='adamw',
