@@ -15,11 +15,12 @@ from dataset.modelnet import ModelNet40
 
 
 class LitModel(pl.LightningModule):
-    def __init__(self, n_points, k, dropout, lr, batch_size, epochs, warm_up, optimizer):
+    def __init__(self, n_points, k, dropout, lr, weight_decay, batch_size, epochs, warm_up, optimizer):
         super().__init__()
         self.save_hyperparameters()
         self.warm_up = warm_up
         self.lr = lr
+        self.weight_decay = weight_decay
         self.batch_size = batch_size
 
         self.net = DGCNN_Cls(k=k, in_dim=3, out_dim=40, dropout=dropout)
@@ -53,11 +54,11 @@ class LitModel(pl.LightningModule):
 
     def configure_optimizers(self):
         if self.hparams.optimizer == 'sgd':
-            optimizer = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9)
+            optimizer = torch.optim.SGD(self.net.parameters(), lr=self.lr, momentum=0.9, weight_decay=self.weight_decay)
         elif self.hparams.optimizer == 'adam':
-            optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr, weight_decay=1e-4)
+            optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         elif self.hparams.optimizer == 'adamw':
-            optimizer = torch.optim.AdamW(self.net.parameters(), lr=self.lr, weight_decay=1e-2)
+            optimizer = torch.optim.AdamW(self.net.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         else:
             raise NotImplementedError
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
@@ -84,6 +85,7 @@ def run(k=40,
         epochs=100,
         warm_up=10,
         optimizer='adamw',
+        weight_decay=1e-2,
         gradient_clip_val=0,
         version='dgcnn',
         offline=False):
@@ -94,7 +96,7 @@ def run(k=40,
     os.makedirs('wandb', exist_ok=True)
     logger = WandbLogger(project='modelnet40_experiments', name=version, save_dir='wandb', offline=offline)
     model = LitModel(n_points=n_points, k=k, dropout=dropout, batch_size=batch_size, epochs=epochs, lr=lr,
-                     warm_up=warm_up, optimizer=optimizer)
+                     weight_decay=weight_decay, warm_up=warm_up, optimizer=optimizer)
     callback = ModelCheckpoint(save_last=True)
 
     trainer = pl.Trainer(logger=logger, accelerator='cuda', max_epochs=epochs, callbacks=[callback],
