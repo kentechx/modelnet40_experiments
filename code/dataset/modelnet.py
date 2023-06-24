@@ -26,10 +26,9 @@ def load_data_cls(partition):
     all_data = []
     all_label = []
     for h5_name in glob.glob(os.path.join(DATA_DIR, 'modelnet40_ply_hdf5_2048', '*%s*.h5' % partition)):
-        f = h5py.File(h5_name, 'r+')
-        data = f['data'][:].astype('float32')
-        label = f['label'][:].astype('int64')
-        f.close()
+        with h5py.File(h5_name, 'r') as f:
+            data = f['data'][:].astype('float32')
+            label = f['label'][:].astype('int64')
         all_data.append(data)
         all_label.append(label)
     all_data = np.concatenate(all_data, axis=0)
