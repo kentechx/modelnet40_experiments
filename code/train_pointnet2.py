@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from einops import rearrange
 from typing import Literal
 
-from pointnet import PointNet2SSGCls, PointNet2MSGCls
+from pointnet import PointNet2ClsSSG, PointNet2ClsMSG
 from dataset.modelnet import ModelNet40
 
 ti.init(ti.cuda)
@@ -27,9 +27,9 @@ class LitModel(pl.LightningModule):
         self.batch_size = batch_size
 
         if model == "ssg":
-            self.net = PointNet2SSGCls(3, 40, dropout=dropout)
+            self.net = PointNet2ClsSSG(3, 40, dropout=dropout)
         elif model == "msg":
-            self.net = PointNet2MSGCls(3, 40, dropout=dropout)
+            self.net = PointNet2ClsMSG(3, 40, dropout=dropout)
         else:
             raise NotImplementedError
 
