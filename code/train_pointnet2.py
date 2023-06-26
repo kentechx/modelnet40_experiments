@@ -1,7 +1,6 @@
 import os
 import fire
 from pprint import pprint
-import taichi as ti
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -12,10 +11,10 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from einops import rearrange
 from typing import Literal
 
-from pointnet import PointNet2ClsSSG, PointNet2ClsMSG
+from pointnet import PointNet2ClsSSG, PointNet2ClsMSG, enable_taichi
 from dataset.modelnet import ModelNet40
 
-ti.init(ti.cuda)
+enable_taichi()
 
 
 class LitModel(pl.LightningModule):
