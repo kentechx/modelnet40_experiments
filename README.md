@@ -41,7 +41,7 @@ sweepings.
 
 | Model        | input | Overall Accuracy | sweep   |
 |--------------|-------|------------------|---------|
-| DGCNN        | xyz   | 92.4%            | &check; |
+| DGCNN        | xyz   | 91.7%            | &check; |
 | PointNet     | xyz   | 90.7%            | &check; |
 | PointNet2SSG | xyz   | 90.7%            |         |
 | PointNet2MSG | xyz   | 92.1%            |         |
