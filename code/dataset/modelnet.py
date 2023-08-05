@@ -89,14 +89,17 @@ class ModelNet40(Dataset):
         self.anisotropic_scale = anisotropic_scale_func
 
     def __getitem__(self, item):
-        pcd = self.data[item][:self.n_points]
+        data = self.data[item].copy()
         label = self.label[item]
         if self.train:
+            np.random.shuffle(data)
+            pcd = data[:self.n_points]
             pcd = self.rotate(pcd)
             pcd = self.jitter(pcd)
             pcd = self.translate(pcd)
             pcd = self.anisotropic_scale(pcd)
-            np.random.shuffle(pcd)
+        else:
+            pcd = data[:self.n_points]
         return pcd.astype('f4'), label.astype('i8')
 
     def __len__(self):
