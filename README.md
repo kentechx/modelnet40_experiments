@@ -25,6 +25,7 @@ The experiments are conducted on the following models:
 - [DGCNN](https://github.com/kentechx/x-dgcnn)
 - [PointNet](https://github.com/kentechx/pointnet)
 - [PointNet2](https://github.com/kentechx/pointnet)
+- [PointNext](https://github.com/kentechx/pointnext)
 
 Training models by running the corresponding scripts in the `code` folder. For example, to train the DGCNN model, run
 the following command:
@@ -45,6 +46,7 @@ sweepings.
 | PointNet     | xyz   | 90.7%            | &check; |
 | PointNet2SSG | xyz   | 90.7%            |         |
 | PointNet2MSG | xyz   | 92.1%            |         |
+| PointNext    | xyz   | 91.3%            |         |
 
 You can reproduce the results by running the corresponding scripts in the `code` folder with default configurations.
 For example, to train the PointNet model, run the following command

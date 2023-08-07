@@ -9,3 +9,4 @@ taichi==1.6.0
 torch==2.0.0
 torchmetrics==0.11.4
 x-dgcnn==0.1.2
+pointnext==0.0.5
