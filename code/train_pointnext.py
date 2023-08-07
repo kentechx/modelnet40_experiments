@@ -1,7 +1,9 @@
 import os
 import fire
 from pprint import pprint
+from functools import partial
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import torchmetrics
@@ -12,7 +14,7 @@ from einops import rearrange
 from typing import Literal
 
 from pointnext import PointNext, pointnext_s, pointnext_b, pointnext_l, pointnext_xl
-from dataset.modelnet import ModelNet40
+from dataset.modelnet import ModelNet40, anisotropic_scale
 
 
 def get_encoder(name, **kwargs):
@@ -29,7 +31,7 @@ def get_encoder(name, **kwargs):
 
 
 class LitModel(pl.LightningModule):
-    def __init__(self, n_points, k, model, dropout, lr, batch_size, epochs, warm_up, optimizer):
+    def __init__(self, n_points, k, model, dropout, lr, batch_size, epochs, warm_up, optimizer, label_smoothing):
         super().__init__()
         self.save_hyperparameters()
         self.warm_up = warm_up
@@ -38,15 +40,28 @@ class LitModel(pl.LightningModule):
 
         encoder = get_encoder(model, in_dim=3, k=k, radius=0.2)
         self.net = PointNext(1024, encoder=encoder)
-        self.cls_head = torch.nn.Linear(1024, 40)
+        self.norm = nn.BatchNorm1d(1024)
+        self.act = nn.ReLU()
+        self.cls_head = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, 40),
+        )
 
         # metrics: OA
         self.train_acc = torchmetrics.Accuracy('multiclass', num_classes=40)
         self.val_acc = torchmetrics.Accuracy('multiclass', num_classes=40)
 
     def forward(self, x, xyz):
-        out = self.net(x, xyz)
+        out = self.norm(self.net(x, xyz))
         out = out.mean(dim=-1)
+        out = self.act(out)
         out = self.cls_head(out)
         return out
 
@@ -54,7 +69,7 @@ class LitModel(pl.LightningModule):
         x, y = batch
         x = rearrange(x, 'b n d -> b d n')
         pred = self(x, x[:, :3, :].clone())
-        loss = F.cross_entropy(pred, y)
+        loss = F.cross_entropy(pred, y, label_smoothing=self.hparams.label_smoothing)
         self.train_acc(pred, y)
         self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"], prog_bar=True)
         self.log('train_loss', loss, prog_bar=True)
@@ -65,7 +80,7 @@ class LitModel(pl.LightningModule):
         x, y = batch
         x = rearrange(x, 'b n d -> b d n')
         pred = self(x, x[:, :3, :].clone())
-        loss = F.cross_entropy(pred, y)
+        loss = F.cross_entropy(pred, y, label_smoothing=self.hparams.label_smoothing)
         self.val_acc(pred, y)
         self.log('val_loss', loss, prog_bar=True)
         self.log('val_acc', self.val_acc, prog_bar=True)
@@ -86,7 +101,10 @@ class LitModel(pl.LightningModule):
 
     def train_dataloader(self):
         H = self.hparams
-        return DataLoader(ModelNet40(n_points=H.n_points, train=True), batch_size=H.batch_size, num_workers=4,
+        return DataLoader(ModelNet40(n_points=H.n_points, train=True,
+                                     anisotropic_scale_func=partial(anisotropic_scale, min_scale=0.9, max_scale=1.1,
+                                                                    p=1.),
+                                     ), batch_size=H.batch_size, num_workers=4,
                           shuffle=True, pin_memory=True)
 
     def val_dataloader(self):
@@ -103,7 +121,8 @@ def run(n_points=1024,
         batch_size=32,
         warm_up=10,
         optimizer='adamw',
-        dropout=0.,
+        dropout=0.5,
+        label_smoothing=0.0,
         gradient_clip_val=0,
         # name='pointnexs_s',
         offline=False):
@@ -115,7 +134,7 @@ def run(n_points=1024,
     os.makedirs('wandb', exist_ok=True)
     logger = WandbLogger(project='modelnet40_experiments', name=name, save_dir='wandb', offline=offline)
     model = LitModel(n_points=n_points, k=k, model=model, dropout=dropout, batch_size=batch_size, epochs=epochs, lr=lr,
-                     warm_up=warm_up, optimizer=optimizer)
+                     warm_up=warm_up, optimizer=optimizer, label_smoothing=label_smoothing)
     callback = ModelCheckpoint(save_last=True)
 
     trainer = pl.Trainer(logger=logger, accelerator='cuda', max_epochs=epochs, callbacks=[callback],
